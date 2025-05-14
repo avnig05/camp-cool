@@ -1,0 +1,58 @@
+# .gitignore for Next.js Projects
+# For more information: https://git-scm.com/docs/gitignore
+
+# Dependencies
+# ----------------------------------------------------------------------
+# Ignore the folder where project dependencies are installed.
+/node_modules
+
+# Next.js Build & Output
+# ----------------------------------------------------------------------
+# Next.js build cache and output.
+/.next/
+# Output directory for `next export` (if you use static site generation).
+/out/
+# A general build directory, if used for other purposes.
+/build
+
+# Log Files
+# ----------------------------------------------------------------------
+# Package manager debug logs.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+# General log directory and files (good practice to ignore).
+logs/
+*.log
+
+# Environment Variables
+# ----------------------------------------------------------------------
+# Ignore all environment configuration files.
+.env
+.env.local
+.env.*.local # e.g., .env.development.local, .env.production.local
+env/ 
+
+# Deployment Specific
+# ----------------------------------------------------------------------
+# Vercel deployment-specific directory (as per original).
+.vercel
+
+# TypeScript Specific
+# ----------------------------------------------------------------------
+# TypeScript incremental build information file (as per original).
+*.tsbuildinfo
+# Next.js auto-generated type definitions file.
+next-env.d.ts
+
+# Operating System Generated Files
+# ----------------------------------------------------------------------
+# Common OS-generated files that should not be in the repository.
+.DS_Store
+Thumbs.db
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
