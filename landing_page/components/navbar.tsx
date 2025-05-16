@@ -9,11 +9,11 @@ import { Linkedin, Menu, X } from "lucide-react"
 import { useMobile } from "@/hooks/use-mobile"
 
 interface NavbarProps {
-  scrollToSection: (ref: React.RefObject<HTMLDivElement>) => void
-  aboutRef: React.RefObject<HTMLDivElement>
-  howItWorksRef: React.RefObject<HTMLDivElement>
-  networkRef: React.RefObject<HTMLDivElement>
-  contactRef: React.RefObject<HTMLDivElement>
+  scrollToSection: (ref: React.RefObject<HTMLDivElement | null>) => void
+  aboutRef: React.RefObject<HTMLDivElement | null>
+  howItWorksRef: React.RefObject<HTMLDivElement | null>
+  networkRef: React.RefObject<HTMLDivElement | null>
+  contactRef: React.RefObject<HTMLDivElement | null>
 }
 
 const Navbar = ({ scrollToSection, aboutRef, howItWorksRef, networkRef, contactRef }: NavbarProps) => {

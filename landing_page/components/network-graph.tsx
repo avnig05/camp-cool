@@ -108,19 +108,19 @@ const NetworkGraph = () => {
         // Draw image if available - with error handling
         if (this.image && this.image.complete && this.image.naturalWidth > 0) {
           try {
-            ctx.save()
-            ctx.beginPath()
-            ctx.arc(this.x, this.y, this.radius - 2, 0, Math.PI * 2)
-            ctx.closePath()
-            ctx.clip()
-            ctx.drawImage(
-              this.image,
-              this.x - this.radius + 2,
-              this.y - this.radius + 2,
-              (this.radius - 2) * 2,
-              (this.radius - 2) * 2,
-            )
-            ctx.restore()
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(this.x, this.y, this.radius - 2, 0, Math.PI * 2)
+          ctx.closePath()
+          ctx.clip()
+          ctx.drawImage(
+            this.image,
+            this.x - this.radius + 2,
+            this.y - this.radius + 2,
+            (this.radius - 2) * 2,
+            (this.radius - 2) * 2,
+          )
+          ctx.restore()
           } catch (error) {
             console.error("Error drawing image:", error)
           }

@@ -2,9 +2,24 @@
 
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
-import { Linkedin, MessageCircle, Users, Sparkles } from "lucide-react"
+import { Linkedin, MessageCircle, Users, Sparkles, LucideIcon } from "lucide-react"
 
-const steps = [
+interface Step {
+  id: number;
+  title: string;
+  description: string;
+  icon: React.ReactElement<LucideIconProps>; // More specific type for Lucide icons
+  color: string;
+}
+
+// Interface for Lucide icon props (can be expanded if more props are used)
+interface LucideIconProps {
+  className?: string;
+  size?: number | string;
+  // Add other relevant props from Lucide if needed
+}
+
+const stepsData: Step[] = [
   {
     id: 1,
     title: "Connect with LinkedIn",
@@ -33,10 +48,72 @@ const steps = [
     icon: <Sparkles className="h-8 w-8 text-white" />,
     color: "#4F9F86",
   },
-]
+];
+
+// --- Internal Components ---
+
+const SectionHeader: React.FC = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    viewport={{ once: true }}
+    className="text-center mb-16"
+  >
+    <h2 className="text-3xl md:text-4xl font-bold mb-4 font-serif">How Lenny Works</h2>
+    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+      Lenny makes it easy to reconnect with your camp community through LinkedIn.
+    </p>
+  </motion.div>
+);
+
+interface StepCardProps {
+  step: Step;
+  itemVariants: any; // Type for Framer Motion variants
+}
+
+const StepCard: React.FC<StepCardProps> = ({ step, itemVariants }) => (
+  <motion.div
+    variants={itemVariants}
+    whileHover={{
+      scale: 1.05,
+      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    }}
+    transition={{ type: "spring", stiffness: 300 }}
+  >
+    <Card className="p-6 h-full flex flex-col items-center text-center border border-[#4F9F86]/10 relative overflow-hidden">
+      <div className="absolute top-0 right-0 h-20 w-20 bg-gradient-to-br from-[#4F9F86]/5 to-transparent rounded-bl-full"></div>
+      <motion.div
+        className="w-16 h-16 rounded-full flex items-center justify-center mb-4 relative z-10"
+        style={{ backgroundColor: step.color }}
+        whileHover={{ rotate: 5 }} // Slight rotation on icon hover
+        animate={{
+          scale: [1, 1.05, 1],
+          boxShadow: [
+            "0 0 0 rgba(79,159,134,0)",
+            "0 0 20px rgba(79,159,134,0.3)",
+            "0 0 0 rgba(79,159,134,0)",
+          ],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "reverse",
+        }}
+      >
+        {step.icon}
+      </motion.div>
+      <h3 className="text-xl font-bold mb-2">{step.title}</h3>
+      <p className="text-gray-600">{step.description}</p>
+      <div className="absolute -bottom-2 -left-2 text-6xl font-bold opacity-10 text-[#4F9F86]">{step.id}</div>
+    </Card>
+  </motion.div>
+);
+
+// --- Main Component ---
 
 const HowItWorks = () => {
-  const container = {
+  const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -44,75 +121,26 @@ const HowItWorks = () => {
         staggerChildren: 0.2,
       },
     },
-  }
+  };
 
-  const item = {
+  const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
-  }
+  };
 
   return (
     <section className="py-20 bg-[#FFF9E3] relative overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 font-serif">How Lenny Works</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Lenny makes it easy to reconnect with your camp community through LinkedIn.
-          </p>
-        </motion.div>
-
+        <SectionHeader />
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-          variants={container}
+          variants={containerVariants}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
         >
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.id}
-              variants={item}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <Card className="p-6 h-full flex flex-col items-center text-center border border-[#4F9F86]/10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 h-20 w-20 bg-gradient-to-br from-[#4F9F86]/5 to-transparent rounded-bl-full"></div>
-
-                <motion.div
-                  className="w-16 h-16 rounded-full flex items-center justify-center mb-4 relative z-10"
-                  style={{ backgroundColor: step.color }}
-                  whileHover={{ rotate: 5 }}
-                  animate={{
-                    scale: [1, 1.05, 1],
-                    boxShadow: [
-                      "0 0 0 rgba(79,159,134,0)",
-                      "0 0 20px rgba(79,159,134,0.3)",
-                      "0 0 0 rgba(79,159,134,0)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatType: "reverse",
-                  }}
-                >
-                  {step.icon}
-                </motion.div>
-                <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-
-                <div className="absolute -bottom-2 -left-2 text-6xl font-bold opacity-10 text-[#4F9F86]">{step.id}</div>
-              </Card>
-            </motion.div>
+          {stepsData.map((step) => (
+            <StepCard key={step.id} step={step} itemVariants={itemVariants} />
           ))}
         </motion.div>
       </div>
