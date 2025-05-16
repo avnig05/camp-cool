@@ -33,7 +33,7 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ show, onClose }
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         exit={{ y: -100 }}
-        className="relative bg-[#4F9F86] text-white p-3 text-center z-50"
+        className="relative bg-[#4F9F86] text-white p-3 text-center z-[50]"
       >
         <div className="container mx-auto">
           <p className="font-medium">

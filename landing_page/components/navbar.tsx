@@ -9,6 +9,7 @@ import { Linkedin, Menu, X } from "lucide-react"
 import { useMobile } from "@/hooks/use-mobile"
 
 interface NavbarProps {
+  showBanner?: boolean;
   scrollToSection: (ref: React.RefObject<HTMLDivElement | null>) => void
   aboutRef: React.RefObject<HTMLDivElement | null>
   howItWorksRef: React.RefObject<HTMLDivElement | null>
@@ -16,7 +17,7 @@ interface NavbarProps {
   contactRef: React.RefObject<HTMLDivElement | null>
 }
 
-const Navbar = ({ scrollToSection, aboutRef, howItWorksRef, networkRef, contactRef }: NavbarProps) => {
+const Navbar = ({ showBanner, scrollToSection, aboutRef, howItWorksRef, networkRef, contactRef }: NavbarProps) => {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isMobile = useMobile()
@@ -38,10 +39,10 @@ const Navbar = ({ scrollToSection, aboutRef, howItWorksRef, networkRef, contactR
 
   return (
     <motion.nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         scrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-transparent"
-      }`}
-      initial={{ y: -100 }}
+      } ${showBanner ? "pt-12 md:pt-0" : ""}`}
+      initial={{ y: showBanner ? 0 : -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
     >
