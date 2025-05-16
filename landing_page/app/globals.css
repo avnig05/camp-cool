@@ -116,8 +116,28 @@
   animation: pulse 2s infinite;
 }
 
-/* Style to completely ignore Grammarly attributes for hydration purposes */
+/* Style to completely ignore browser extension attributes for hydration purposes */
 [data-gr-ext-installed],
-[data-new-gr-c-s-check-loaded] {
+[data-new-gr-c-s-check-loaded],
+[data-grammar-editor-extension],
+[data-grammarly-extension],
+[data-lt-installed],
+[data-lt-active],
+[extension-version],
+[extension-id],
+[browser-extension],
+[style-handled-by-extension],
+[data-extension],
+[data-lt-agent] {
+  display: revert !important;
+}
+
+/* Properly handle attributes starting with data- */
+body[data-gr-ext-installed],
+body[data-new-gr-c-s-check-loaded],
+[data-grammarly-extension],
+*[data^="gr-"],
+*[data^="data-gr"],
+*[data^="grammarly"] {
   display: revert !important;
 }
