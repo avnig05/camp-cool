@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Play, Pause, Volume2, VolumeX } from "lucide-react"
 
@@ -13,6 +13,67 @@ interface VoiceMessagePlayerProps {
 const getPseudoRandom = (index: number, salt: number = 1): number => {
   return (((index * 9973 + salt * 6997) % 2027) / 2027);
 }
+
+// --- Internal Components ---
+
+interface PlayerHeaderProps {
+  label: string;
+}
+
+const PlayerHeader: React.FC<PlayerHeaderProps> = ({ label }) => (
+  <div className="flex items-center mb-3">
+    <div className="h-8 w-8 rounded-full bg-[#4F9F86] flex items-center justify-center text-white flex-shrink-0 mr-3">
+      L
+    </div>
+    <span className="text-sm text-gray-600">{label}</span>
+  </div>
+);
+
+interface WaveformDisplayProps {
+  waveformBars: number[];
+  progress: number;
+  isPlaying: boolean;
+  isClient: boolean;
+  getAnimationHeight: (baseHeight: number, index: number, time: number) => number;
+}
+
+const WaveformDisplay: React.FC<WaveformDisplayProps> = ({
+  waveformBars,
+  progress,
+  isPlaying,
+  isClient,
+  getAnimationHeight,
+}) => (
+  <div className="flex items-center h-10">
+    {waveformBars.map((barHeight, index) => {
+      const isActive = (index / waveformBars.length) * 100 <= progress;
+      const height = isClient && isPlaying && isActive
+        ? getAnimationHeight(barHeight, index, Date.now())
+        : barHeight;
+
+      return (
+        <motion.div
+          key={index}
+          className={`mx-[1px] rounded-full ${isActive ? "bg-[#4F9F86]" : "bg-gray-300"}`}
+          style={{ height: `${height}px`, width: "3px" }}
+          animate={
+            isClient && isPlaying && isActive
+              ? { height: [height, height + 5, height] }
+              : {}
+          }
+          transition={{
+            duration: 0.5,
+            repeat: isClient && isPlaying && isActive ? Number.POSITIVE_INFINITY : 0,
+            repeatType: "reverse",
+            delay: index * 0.01,
+          }}
+        />
+      );
+    })}
+  </div>
+);
+
+// --- Main Component ---
 
 const VoiceMessagePlayer = ({ duration, label }: VoiceMessagePlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -87,33 +148,28 @@ const VoiceMessagePlayer = ({ duration, label }: VoiceMessagePlayerProps) => {
     setIsMuted(!isMuted)
   }
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`
-  }
+  }, [])
 
   const currentTime = (progress / 100) * duration
   const remainingTime = duration - currentTime
 
   // Create a deterministic animation pattern
-  const getAnimationHeight = (baseHeight: number, index: number, time: number) => {
+  const getAnimationHeight = useCallback((baseHeight: number, index: number, time: number) => {
     if (!isClient || !isPlaying) return baseHeight;
     
     // Create a wave-like motion using index and current time
     const phase = (index * 0.2 + time * 0.001) % (2 * Math.PI);
     const amplitude = 5; // Maximum height change
     return baseHeight + Math.sin(phase) * amplitude;
-  }
+  }, [isClient, isPlaying])
 
   return (
     <div className="bg-[#FFF9E3] p-4 rounded-xl border border-[#4F9F86]/10 shadow-sm">
-      <div className="flex items-center mb-3">
-        <div className="h-8 w-8 rounded-full bg-[#4F9F86] flex items-center justify-center text-white flex-shrink-0 mr-3">
-          L
-        </div>
-        <span className="text-sm text-gray-600">{label}</span>
-      </div>
+      <PlayerHeader label={label} />
 
       <div className="flex items-center gap-3">
         <button
@@ -124,36 +180,13 @@ const VoiceMessagePlayer = ({ duration, label }: VoiceMessagePlayerProps) => {
         </button>
 
         <div className="flex-1">
-          <div className="flex items-center h-10">
-            {waveformBars.map((barHeight, index) => {
-              const isActive = (index / waveformBars.length) * 100 <= progress
-              // Use the base height for SSR, and add animations only on the client
-              const height = isClient && isPlaying && isActive 
-                ? getAnimationHeight(barHeight, index, Date.now()) 
-                : barHeight;
-
-              return (
-                <motion.div
-                  key={index}
-                  className={`mx-[1px] rounded-full ${isActive ? "bg-[#4F9F86]" : "bg-gray-300"}`}
-                  style={{ height: `${height}px`, width: "3px" }}
-                  animate={
-                    isClient && isPlaying && isActive
-                      ? {
-                          height: [height, height + 5, height],
-                        }
-                      : {}
-                  }
-                  transition={{
-                    duration: 0.5,
-                    repeat: isClient && isPlaying && isActive ? Number.POSITIVE_INFINITY : 0,
-                    repeatType: "reverse",
-                    delay: index * 0.01, // Stagger the animations slightly
-                  }}
-                />
-              )
-            })}
-          </div>
+          <WaveformDisplay
+            waveformBars={waveformBars}
+            progress={progress}
+            isPlaying={isPlaying}
+            isClient={isClient}
+            getAnimationHeight={getAnimationHeight}
+          />
 
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>{formatTime(currentTime)}</span>
