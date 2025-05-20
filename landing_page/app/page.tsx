@@ -5,10 +5,12 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
+import { useSearchParams } from 'next/navigation'
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Linkedin, MessageCircle, X, ChevronDown, Sparkles } from "lucide-react"
+import { Linkedin, MessageCircle, X, ChevronDown, Sparkles, Send } from "lucide-react"
 import NetworkGraph from "@/components/network-graph"
 import HowItWorks from "@/components/how-it-works"
 import FloatingElements from "@/components/floating-elements"
@@ -18,8 +20,49 @@ import Navbar from "@/components/navbar"
 import CampNetworkVisual from "@/components/camp-network-visual"
 import VoiceConversationSection from "@/components/voice-conversation-section"
 
+// --- Constants ---
+const COOKIE_NAMES = {
+  LINKEDIN_STATE: 'linkedin_oauth_state',
+} as const;
+
+const AUTH_STATUSES = {
+  SUCCESS: 'success',
+  ERROR: 'error',
+  FAILED: 'failed',
+} as const;
+
+const SECTIONS = {
+  ABOUT: 'about',
+  HOW_IT_WORKS: 'how-it-works',
+  NETWORK: 'network',
+  CONTACT: 'contact',
+  WAITLIST: 'waitlist',
+} as const;
+
 // Helper function type for scrolling
 type ScrollToSectionType = (ref: React.RefObject<HTMLDivElement | null>) => void;
+
+// Helper function to generate a random string for the state parameter
+const generateRandomString = (length: number): string => {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array)
+    .map(x => characters.charAt(x % characters.length))
+    .join('');
+};
+
+// Helper function to set a secure cookie (client-side)
+const setSecureCookie = (name: string, value: string, minutes: number) => {
+  const date = new Date();
+  date.setTime(date.getTime() + (minutes * 60 * 1000));
+  const expires = "; expires=" + date.toUTCString();
+  let cookieString = `${name}=${value || ""}${expires}; path=/; SameSite=Lax`;
+  if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
+    cookieString += '; Secure';
+  }
+  document.cookie = cookieString;
+};
 
 // 1. AnnouncementBanner Component
 interface AnnouncementBannerProps {
@@ -57,8 +100,15 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ show, onClose }
 interface HeroContentLeftProps {
   scrollToSection: ScrollToSectionType;
   howItWorksRef: React.RefObject<HTMLDivElement | null>;
+  waitlistRef: React.RefObject<HTMLDivElement | null>;
+  onLinkedInConnect: () => void;
 }
-const HeroContentLeft: React.FC<HeroContentLeftProps> = ({ scrollToSection, howItWorksRef }) => (
+const HeroContentLeft: React.FC<HeroContentLeftProps> = ({ 
+  scrollToSection, 
+  howItWorksRef, 
+  waitlistRef,
+  onLinkedInConnect 
+}) => (
   <motion.div
     initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
@@ -75,12 +125,13 @@ const HeroContentLeft: React.FC<HeroContentLeftProps> = ({ scrollToSection, howI
       </Badge>
     </motion.div>
     <motion.h1
-      className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-serif"
+      className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-serif leading-[1.2]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.7 }}
     >
-      Meet Lenny, Your Camp Connection Guide
+      Meet Lenny,<br />
+      <span className="inline-block">Your Camp Connection Guide</span>
     </motion.h1>
     <motion.p
       className="text-lg mb-8 max-w-xl"
@@ -97,7 +148,9 @@ const HeroContentLeft: React.FC<HeroContentLeftProps> = ({ scrollToSection, howI
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.7, duration: 0.5 }}
     >
-      <Button className="bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white rounded-full group transition-all duration-300 transform hover:scale-105">
+      <Button 
+        onClick={onLinkedInConnect}
+        className="bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white rounded-full group transition-all duration-300 transform hover:scale-105">
         <span>Connect with LinkedIn</span>
         <Linkedin className="ml-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
       </Button>
@@ -108,6 +161,14 @@ const HeroContentLeft: React.FC<HeroContentLeftProps> = ({ scrollToSection, howI
       >
         <span>Learn how Lenny works</span>
         <ChevronDown className="ml-2 h-5 w-5 group-hover:translate-y-1 transition-transform" />
+      </Button>
+      <Button
+        variant="outline"
+        className="border-[#F6BE46] text-[#F6BE46] rounded-full group transition-all duration-300 transform hover:scale-105 hover:bg-[#F6BE46]/10"
+        onClick={() => scrollToSection(waitlistRef)}
+      >
+        <span>Join Waitlist</span>
+        <Send className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
       </Button>
     </motion.div>
   </motion.div>
@@ -237,27 +298,74 @@ const ContactCTAContent: React.FC = () => (
 export default function Home() {
   const isMobile = useIsMobile()
   const [showBanner, setShowBanner] = useState(true)
-  const [scrolled, setScrolled] = useState(false)
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const searchParams = useSearchParams()
 
   // Refs for scrolling to sections
   const aboutRef = useRef<HTMLDivElement>(null)
   const howItWorksRef = useRef<HTMLDivElement>(null)
   const networkRef = useRef<HTMLDivElement>(null)
   const contactRef = useRef<HTMLDivElement>(null)
+  const waitlistRef = useRef<HTMLDivElement>(null)
 
+  // Effects for LinkedIn auth status and footer year
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    const handleAuthStatus = () => {
+      const status = searchParams.get('linkedin_auth_status');
+      const error = searchParams.get('linkedin_error');
+      const errorDescription = searchParams.get('linkedin_error_description');
+
+      if (status === AUTH_STATUSES.SUCCESS) {
+        toast.success('Successfully connected with LinkedIn!');
+      } else if (status === AUTH_STATUSES.ERROR || status === AUTH_STATUSES.FAILED) {
+        toast.error(errorDescription || error || 'Failed to connect with LinkedIn. Please try again.');
+      }
+      // Clean up URL by removing query parameters after processing
+      // This prevents the toast from re-appearing on page refresh if params are still there
+      if (status || error || errorDescription) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete('linkedin_auth_status');
+        currentUrl.searchParams.delete('linkedin_error');
+        currentUrl.searchParams.delete('linkedin_error_description');
+        window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
+      }
+    };
+
+    handleAuthStatus();
+    setCurrentYear(new Date().getFullYear());
+  }, [searchParams]);
 
   const scrollToSection: ScrollToSectionType = (ref) => {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: "smooth" })
     }
   }
+
+  const handleLinkedInConnect = async () => {
+    const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
+    const redirectUri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
+    const scope = "openid profile email";
+    
+    if (!clientId || !redirectUri) {
+      console.error("LinkedIn client ID or redirect URI is not configured in environment variables.");
+      toast.error("LinkedIn connection is currently unavailable. Please try again later or contact support if the issue persists.");
+      return;
+    }
+    
+    const state = generateRandomString(32);
+    setSecureCookie(COOKIE_NAMES.LINKEDIN_STATE, state, 5);
+
+    const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        state,
+        scope,
+    });
+    
+    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+    window.location.href = authUrl;
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#FFF9E3] to-[#82AFA9]/20 relative overflow-hidden">
@@ -275,7 +383,12 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 pt-28 pb-24 flex flex-col lg:flex-row items-center relative">
-        <HeroContentLeft scrollToSection={scrollToSection} howItWorksRef={howItWorksRef} />
+        <HeroContentLeft 
+          scrollToSection={scrollToSection} 
+          howItWorksRef={howItWorksRef}
+          waitlistRef={waitlistRef}
+          onLinkedInConnect={handleLinkedInConnect}
+        />
         <HeroVisualRight />
         <motion.div
           initial={{ opacity: 0 }}
@@ -289,9 +402,15 @@ export default function Home() {
 
       {/* About Section */}
       <section ref={aboutRef} id="about" className="py-20 relative overflow-hidden">
-        <div className="container mx-auto px-4">
+        <motion.div
+          className="container mx-auto px-4"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true }}
+        >
           <VoiceConversationSection />
-        </div>
+        </motion.div>
       </section>
 
       {/* How Lenny Works */}
@@ -339,14 +458,156 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Waitlist Section */}
+      <section ref={waitlistRef} id="waitlist" className="py-16 container mx-auto px-4">
+        <WaitlistSignup />
+      </section>
+
       {/* Footer */}
       <footer className="py-12 bg-gradient-to-t from-[#FFF9E3]/50 to-transparent">
         <div className="container mx-auto px-4 text-center">
           <div className="mt-8 pt-8 border-t border-[#4F9F86]/20 text-sm text-gray-600">
-            <p>© {new Date().getFullYear()} Camp Pool. All rights reserved.</p>
+            {currentYear && <p>© {currentYear} Camp Pool. All rights reserved.</p>}
           </div>
         </div>
       </footer>
     </main>
   )
+}
+
+export function WaitlistSignup() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error" | "already_exists">("idle");
+  const [message, setMessage] = useState(""); // Combined state for error or success messages
+
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(""); // Clear previous messages
+
+    if (!validateEmail(email)) {
+      setStatus("error");
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+
+    setStatus("loading");
+    
+    try {
+      const response = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setStatus("error");
+        setMessage(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+      
+      // Handle specific non-error messages like "already on waitlist"
+      if (response.status === 200 && data.message === "Email already on waitlist") {
+        setStatus("already_exists");
+        setMessage("This email is already on our waitlist! We'll keep you posted.");
+        setEmail(""); // Clear email input
+      } else if (data.success) {
+        setStatus("success");
+        setMessage(data.message || "You're on the list! We'll keep you posted.");
+        setEmail("");
+      } else {
+        // Fallback for unexpected successful responses without a clear success/already_exists marker
+        setStatus("error");
+        setMessage(data.message || "An unexpected issue occurred. Please try again.");
+      }
+
+    } catch (error) {
+      setStatus("error");
+      setMessage("Failed to connect to the server. Please check your internet connection and try again.");
+      console.error("Waitlist signup error:", error);
+    }
+  };
+
+  return (
+    <div className="max-w-md w-full mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-lg shadow-lg p-6 border border-[#4F9F86]/20"
+      >
+        <h3 className="text-xl font-bold mb-4 text-[#4F9F86] font-serif">Join our waitlist!</h3>
+        
+        {status === "success" || status === "already_exists" ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-4"
+          >
+            <div className={`w-16 h-16 ${status === "success" ? "bg-[#4F9F86]" : "bg-blue-500"} rounded-full flex items-center justify-center mx-auto mb-4`}>
+              {status === "success" ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : ( // "already_exists" icon
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <p className="text-lg font-medium">{status === "success" ? "You're on the list! 🎉" : "You're already on the list!"}</p>
+            <p className="text-gray-600 mt-2">{message}</p>
+          </motion.div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="sr-only">Email address</label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4F9F86] focus:border-transparent"
+                aria-required="true"
+                aria-invalid={status === "error"}
+                aria-describedby={status === "error" || status === "loading" ? "status-message" : undefined}
+                disabled={status === "loading"}
+              />
+              {(status === "error" || (status === "loading" && !message) ) && (
+                <p id="status-message" className={`mt-2 text-sm ${status === "error" ? "text-red-600" : "text-gray-600"}`} role={status === "error" ? "alert": "status"}>
+                  {status === "loading" && !message ? "Submitting..." : message}
+                </p>
+              )}
+               {/* Explicitly show message if status is error and message is set */}
+              {status === "error" && message && (
+                <p id="error-message-explicit" className="mt-2 text-sm text-red-600" role="alert">
+                  {message}
+                </p>
+              )}
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white rounded-full group transition-all duration-300 transform hover:scale-105 flex justify-center py-3"
+              disabled={status === "loading"}
+            >
+              {status === "loading" ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+              ) : (
+                <>
+                  Join the Waitlist
+                  <Send className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </Button>
+          </form>
+        )}
+      </motion.div>
+    </div>
+  );
 }
