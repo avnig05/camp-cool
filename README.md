@@ -36,4 +36,23 @@ To run Camp Cool locally, follow these steps:
     this script will create a virtual environment, install the required Python packages, and initialize your .env, as well as set up the Node.js environment and pnpm packages.
 
 3. Set up the environment variables:
+
     there are several environment variables that need to be set up in the `.env` file. You can copy the `.env.example` file to `.env` and fill in the required values.
+
+4. Once Everything is correctly set up, start two terminals. 
+
+    in the first terminal, run the FastAPI backend:
+    
+    ```bash
+    cd backend
+    uvicorn src.main:app --reload
+    ```
+
+    In the second terminal, run the Next.js frontend:
+
+    ```bash
+    cd frontend
+    pnpm dev
+    ```
+
+4. Open your browser and navigate to `http://localhost:3000` to access the Camp Cool application.
