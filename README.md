@@ -13,3 +13,27 @@ Lenny is trained on a wide range of topics related to Jewish culture, traditions
 Camp Pool is built on Typescript and NextJS powered frontend,
 
 with the backend powered by FastAPI, MongoDB, OpenAI, and Twilio voice API. The application is designed to be scalable, secure, and user-friendly, providing a seamless experience for users.
+
+## Run Locally
+
+To run Camp Cool locally, follow these steps:
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/avnig05/camp-cool.git
+    cd camp-cool
+    ```
+
+2. Install the dependencies:
+
+    ensure you have Python 3.8+, pip, Nodejs, and npm. installed, then run:
+
+    ```bash
+    source init.sh
+    ```
+
+    this script will create a virtual environment, install the required Python packages, and initialize your .env, as well as set up the Node.js environment and pnpm packages.
+
+3. Set up the environment variables:
+    there are several environment variables that need to be set up in the `.env` file. You can copy the `.env.example` file to `.env` and fill in the required values.
