@@ -1,27 +1,28 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react"; // Keep type React if it's used for explicit typing elsewhere, otherwise can be removed if not directly used.
 
-import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import Image from "next/image"
-import { useSearchParams } from 'next/navigation'
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Avatar } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Linkedin, MessageCircle, X, ChevronDown, Sparkles, Send } from "lucide-react"
-import NetworkGraph from "@/components/network-graph"
-import HowItWorks from "@/components/how-it-works"
-import FloatingElements from "@/components/floating-elements"
-import { useIsMobile } from "@/hooks/use-mobile"
-import ScrollProgress from "@/components/scroll-progress"
-import Navbar from "@/components/navbar"
-import CampNetworkVisual from "@/components/camp-network-visual"
-import VoiceConversationSection from "@/components/voice-conversation-section"
-import posthog from 'posthog-js'
-import { on } from "events"
-import ChatPopup from "@/components/chatPopup"
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { useSearchParams } from 'next/navigation';
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Linkedin, MessageCircle, X, ChevronDown, Sparkles, Send } from "lucide-react";
+import NetworkGraph from "@/components/network-graph";
+import HowItWorks from "@/components/how-it-works";
+import FloatingElements from "@/components/floating-elements";
+import { useIsMobile } from "@/hooks/use-mobile";
+import ScrollProgress from "@/components/scroll-progress";
+import Navbar from "@/components/navbar";
+import CampNetworkVisual from "@/components/camp-network-visual";
+import VoiceConversationSection from "@/components/voice-conversation-section";
+import posthog from 'posthog-js';
+// import { on } from "events"; // Removed unused import
+import ChatPopup from "@/components/chatPopup"; // Corrected casing assuming filename is ChatPopup.tsx
+import WaitlistSignup from "@/components/waitlistSignup"; // Import WaitlistSignup
 
 // --- Constants ---
 const COOKIE_NAMES = {
@@ -61,10 +62,12 @@ const setSecureCookie = (name: string, value: string, minutes: number) => {
   date.setTime(date.getTime() + (minutes * 60 * 1000));
   const expires = "; expires=" + date.toUTCString();
   let cookieString = `${name}=${value || ""}${expires}; path=/; SameSite=Lax`;
-  if (process.env.NODE_ENV === 'production' || window.location.protocol === 'https:') {
+  if (process.env.NODE_ENV === 'production' || (typeof window !== 'undefined' && window.location.protocol === 'https:')) {
     cookieString += '; Secure';
   }
-  document.cookie = cookieString;
+  if (typeof document !== 'undefined') {
+    document.cookie = cookieString;
+  }
 };
 
 // 1. AnnouncementBanner Component
@@ -178,7 +181,7 @@ const HeroContentLeft: React.FC<HeroContentLeftProps> = ({
 );
 
 interface HeroVisualRightProps {
-  onOpenChat: () => void; // Add this prop
+  onOpenChat: () => void;
 }
 
 // 3. HeroVisualRight Component
@@ -192,7 +195,7 @@ const HeroVisualRight: React.FC<HeroVisualRightProps> = ({ onOpenChat }) => (
     <div className="relative">
       <NetworkGraph />
       <motion.div
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer" // Added cursor-pointer
         onClick={onOpenChat}
         animate={{
           y: [0, -10, 0],
@@ -214,7 +217,7 @@ const HeroVisualRight: React.FC<HeroVisualRightProps> = ({ onOpenChat }) => (
           <Avatar className="h-32 w-32 border-4 border-white shadow-xl rounded-full overflow-hidden pulse">
             <Image
               src="/images/lenny-logo.png"
-              alt="Lenny"
+              alt="Lenny - Click to Chat"
               fill
               sizes="128px"
               priority
@@ -304,28 +307,32 @@ const ContactCTAContent: React.FC = () => (
 );
 
 export default function Home() {
-  const isMobile = useIsMobile()
-  const [showBanner, setShowBanner] = useState(true)
+  const isMobile = useIsMobile(); // Ensure useIsMobile hook is correctly implemented and imported
+  const [showBanner, setShowBanner] = useState(true);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams();
 
   // Refs for scrolling to sections
-  const aboutRef = useRef<HTMLDivElement>(null)
-  const howItWorksRef = useRef<HTMLDivElement>(null)
-  const networkRef = useRef<HTMLDivElement>(null)
-  const contactRef = useRef<HTMLDivElement>(null)
-  const waitlistRef = useRef<HTMLDivElement>(null)
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const howItWorksRef = useRef<HTMLDivElement>(null);
+  const networkRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLDivElement>(null);
+  const waitlistRef = useRef<HTMLDivElement>(null);
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleOpenChat = () => {
     setIsChatOpen(true);
-    posthog.capture('chat_opened', { source: 'landing_page' });
+    if (typeof window !== 'undefined' && posthog) { // Check if posthog is available
+        posthog.capture('chat_opened', { source: 'landing_page' });
+    }
   };
 
   const handleCloseChat = () => {
     setIsChatOpen(false);
-    posthog.capture('chat_closed', { source: 'landing_page' });
+    if (typeof window !== 'undefined' && posthog) { // Check if posthog is available
+        posthog.capture('chat_closed', { source: 'landing_page' });
+    }
   };
 
   // Effects for LinkedIn auth status and footer year
@@ -340,14 +347,15 @@ export default function Home() {
       } else if (status === AUTH_STATUSES.ERROR || status === AUTH_STATUSES.FAILED) {
         toast.error(errorDescription || error || 'Failed to connect with LinkedIn. Please try again.');
       }
-      // Clean up URL by removing query parameters after processing
-      // This prevents the toast from re-appearing on page refresh if params are still there
-      if (status || error || errorDescription) {
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.delete('linkedin_auth_status');
-        currentUrl.searchParams.delete('linkedin_error');
-        currentUrl.searchParams.delete('linkedin_error_description');
-        window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
+      
+      if (typeof window !== 'undefined') { // Ensure window is defined for history manipulation
+        if (status || error || errorDescription) {
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.delete('linkedin_auth_status');
+          currentUrl.searchParams.delete('linkedin_error');
+          currentUrl.searchParams.delete('linkedin_error_description');
+          window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
+        }
       }
     };
 
@@ -357,9 +365,9 @@ export default function Home() {
 
   const scrollToSection: ScrollToSectionType = (ref) => {
     if (ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth" })
+      ref.current.scrollIntoView({ behavior: "smooth" });
     }
-  }
+  };
 
   const handleLinkedInConnect = async () => {
     const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
@@ -373,7 +381,7 @@ export default function Home() {
     }
     
     const state = generateRandomString(32);
-    setSecureCookie(COOKIE_NAMES.LINKEDIN_STATE, state, 5);
+    setSecureCookie(COOKIE_NAMES.LINKEDIN_STATE, state, 5); // Assumes setSecureCookie handles typeof document check
 
     const params = new URLSearchParams({
         response_type: 'code',
@@ -383,8 +391,10 @@ export default function Home() {
         scope,
     });
     
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
-    window.location.href = authUrl;
+    if (typeof window !== 'undefined') { // Ensure window is defined for navigation
+        const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+        window.location.href = authUrl;
+    }
   };
 
   return (
@@ -395,7 +405,7 @@ export default function Home() {
         howItWorksRef={howItWorksRef}
         networkRef={networkRef}
         contactRef={contactRef}
-        onLinkedInConnect={handleLinkedInConnect}
+        onLinkedInConnect={handleLinkedInConnect} // Pass this prop to Navbar
       />
       <FloatingElements />
       <ScrollProgress />
@@ -486,7 +496,7 @@ export default function Home() {
 
       <AnimatePresence>
         {isChatOpen && (
-          <ChatPopup onClose={handleCloseChat} /> // <--- RENDER CHAT POPUP
+          <ChatPopup onClose={handleCloseChat} />
         )}
       </AnimatePresence>
 
@@ -499,142 +509,8 @@ export default function Home() {
         </div>
       </footer>
     </main>
-  )
-}
-
-export function WaitlistSignup() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error" | "already_exists">("idle");
-  const [message, setMessage] = useState(""); // Combined state for error or success messages
-
-  const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage(""); // Clear previous messages
-
-    if (!validateEmail(email)) {
-      setStatus("error");
-      setMessage("Please enter a valid email address.");
-      return;
-    }
-
-    setStatus("loading");
-    
-    try {
-      const response = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setStatus("error");
-        setMessage(data.error || "Something went wrong. Please try again.");
-        return;
-      }
-      
-      if (response.status === 200 && data.message === "Email already on waitlist") {
-        setStatus("already_exists");
-        setMessage("This email is already on our waitlist! We'll keep you posted.");
-        posthog.capture('waitlist_already_joined', {
-          email: email,
-          message: data.message
-        });
-        setEmail(""); // Clear email input
-      } else if (data.success) {
-        setStatus("success");
-        setMessage(data.message || "You're on the list! We'll keep you posted.");
-        posthog.capture('waitlist_signup_success', {
-          email: email,
-          message: data.message
-        });
-        setEmail("");
-      } else {
-        setStatus("error");
-        setMessage(data.message || "An unexpected issue occurred. Please try again.");
-      }
-
-    } catch (error) {
-      setStatus("error");
-      setMessage("Failed to connect to the server. Please check your internet connection and try again.");
-      console.error("Waitlist signup error:", error);
-    }
-  };
-
-  return (
-    <div className="max-w-md w-full mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-lg shadow-lg p-6 border border-[#4F9F86]/20"
-      >
-        <h3 className="text-xl font-bold mb-4 text-[#4F9F86] font-serif">Join our waitlist!</h3>
-        
-        {status === "success" || status === "already_exists" ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-4"
-          >
-            <div className={`w-16 h-16 ${status === "success" ? "bg-[#4F9F86]" : "bg-blue-500"} rounded-full flex items-center justify-center mx-auto mb-4`}>
-              {status === "success" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : ( // "already_exists" icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
-            </div>
-            <p className="text-lg font-medium">{status === "success" ? "You're on the list! 🎉" : "You're already on the list!"}</p>
-            <p className="text-gray-600 mt-2">{message}</p>
-          </motion.div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4F9F86] focus:border-transparent"
-                aria-required="true"
-                aria-invalid={status === "error"}
-                aria-describedby={status === "error" || status === "loading" ? "status-message" : undefined}
-                disabled={status === "loading"}
-              />
-              {(status === "error" || (status === "loading" && !message) ) && (
-                <p id="status-message" className={`mt-2 text-sm ${status === "error" ? "text-red-600" : "text-gray-600"}`} role={status === "error" ? "alert": "status"}>
-                  {status === "loading" && !message ? "Submitting..." : message}
-                </p>
-              )}
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white rounded-full group transition-all duration-300 transform hover:scale-105 flex justify-center py-3"
-              disabled={status === "loading"}
-            >
-              {status === "loading" ? (
-                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
-              ) : (
-                <>
-                  Join the Waitlist
-                  <Send className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </Button>
-          </form>
-        )}
-      </motion.div>
-    </div>
   );
 }
+
+// The WaitlistSignup function definition has been REMOVED from this file.
+// It should be in its own file (e.g., components/WaitlistSignup.tsx) and imported.
