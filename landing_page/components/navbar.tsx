@@ -16,9 +16,10 @@ interface NavbarProps {
   howItWorksRef: React.RefObject<HTMLDivElement | null>
   networkRef: React.RefObject<HTMLDivElement | null>
   contactRef: React.RefObject<HTMLDivElement | null>
+  onLinkedInConnect: () => void;
 }
 
-const Navbar = ({ showBanner, scrollToSection, aboutRef, howItWorksRef, networkRef, contactRef }: NavbarProps) => {
+const Navbar = ({ showBanner, scrollToSection, aboutRef, howItWorksRef, networkRef, contactRef, onLinkedInConnect }: NavbarProps) => {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isMobile = useMobile()
@@ -39,21 +40,6 @@ const Navbar = ({ showBanner, scrollToSection, aboutRef, howItWorksRef, networkR
   ]
 
   const bannerHeightClass = showBanner && isMobile ? "pt-12" : (showBanner && !isMobile ? "pt-0" : "");
-
-  const handleLinkedInConnect = () => {
-    const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
-    const scope = "openid profile email";
-    const state = "DCEeFWf45A53sdfKef424";
-    
-    if (!clientId || !redirectUri) {
-      console.error("LinkedIn client ID or redirect URI is not configured in environment variables.");
-      return;
-    }
-
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scope)}`;
-    window.location.href = authUrl;
-  };
 
   return (
     <motion.nav
@@ -118,7 +104,7 @@ const Navbar = ({ showBanner, scrollToSection, aboutRef, howItWorksRef, networkR
 
           {/* CTA Button */}
           <Button
-            onClick={handleLinkedInConnect}
+            onClick={onLinkedInConnect}
             className={`${
               scrolled ? "bg-[#4F9F86] hover:bg-[#4F9F86]/90" : "bg-[#4F9F86] hover:bg-[#4F9F86]/90"
             } text-white rounded-full group transition-all duration-300 transform hover:scale-105 hidden md:flex`}
@@ -170,7 +156,7 @@ const Navbar = ({ showBanner, scrollToSection, aboutRef, howItWorksRef, networkR
               </a>
             ))}
             <Button 
-              onClick={handleLinkedInConnect}
+              onClick={onLinkedInConnect}
               className="w-full mt-3 bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white rounded-full"
               role="menuitem"
             >

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import posthog from "posthog-js"
 
 import { cn } from "@/lib/utils"
 
@@ -37,17 +38,58 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  analyticsLabel?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, onClick, children, analyticsLabel, id, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+
+    const handleAnalyticsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      let buttonText = analyticsLabel
+      
+      if (!buttonText) {
+        if (typeof children === 'string') {
+          buttonText = children;
+        } else if (React.isValidElement(children)) {
+          // If children is a React element, its props might contain further children.
+          const elementProps = children.props as { children?: React.ReactNode }; // Cast to a type that might have children
+          if (elementProps && typeof elementProps.children === 'string') {
+            buttonText = elementProps.children;
+          } else {
+            // If props.children is not a string (e.g., it's another element, an array, or undefined)
+            buttonText = id || 'N/A';
+          }
+        } else {
+          // If children is not a string and not a single React element (e.g., it's an array of elements, a number, null, etc.)
+          buttonText = id || 'N/A';
+        }
+      }
+
+      posthog.capture("button_click", {
+        button_text: buttonText,
+        button_id: id,
+        button_variant: variant,
+        button_size: size,
+        button_className: className,
+        current_url: typeof window !== "undefined" ? window.location.href : "",
+      })
+
+      if (onClick) {
+        onClick(event)
+      }
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        onClick={handleAnalyticsClick}
+        id={id}
         {...props}
-      />
+      >
+        {children}
+      </Comp>
     )
   }
 )
