@@ -1,6 +1,7 @@
 import type React from "react"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { PostHogProvider } from "@/components/PostHogProvider"
 import { Noto_Serif } from 'next/font/google'
 
 const notoSerif = Noto_Serif({
@@ -56,15 +57,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${notoSerif.variable} font-sans`}>
       <body suppressHydrationWarning className={notoSerif.className}>
-        <ThemeProvider 
-          attribute="class" 
-          defaultTheme="light" 
-          forcedTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider 
+            attribute="class" 
+            defaultTheme="light" 
+            forcedTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

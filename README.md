@@ -1,33 +1,15 @@
-# Camp Cool - Fine-tuning Project
+# Camp Cool - A Friendly Jewish Camp Chatbot
 
-This project contains code for fine-tuning an OpenAI model with custom data.
+Camp Cool is a friendly chatbot designed to help Jewish users connect with fellow members of the Jewish community. It provides a platform for users to share their experiences, ask questions, and engage in discussions about Jewish culture, traditions, and community events.
 
-## Setup
+## Lenny - The Camp Cool Bot
 
-1. Create a virtual environment:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+Lenny is the friendly bot that powers Camp Cool. He is designed to be helpful, engaging, and knowledgeable about Jewish culture and community events. Lenny can answer questions, provide information, and facilitate discussions among users.
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+Lenny is trained on a wide range of topics related to Jewish culture, traditions, and community events and has access to a large database of jewish summer camps, facilitating connections between "seekers" those looking for fellow alumni and "lifeguards" those who are willing to help and mentor the seekers.
 
-3. Create a `.env` file in the project root and add your OpenAI API key:
-```
-OPENAI_API_KEY=your-api-key-here
-```
+## Tech Stack
 
-## Usage
+Camp Pool is built on Typescript and NextJS powered frontend,
 
-Run the fine-tuning script:
-```bash
-python model/fine_tune_lenny.py
-```
-
-The script will:
-1. Upload your training data
-2. Start a fine-tuning job
-3. Print the job ID for tracking
+with the backend powered by FastAPI, MongoDB, OpenAI, and Twilio voice API. The application is designed to be scalable, secure, and user-friendly, providing a seamless experience for users.
