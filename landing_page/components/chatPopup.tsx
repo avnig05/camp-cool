@@ -1,4 +1,3 @@
-// components/ChatPopup.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -19,12 +18,11 @@ interface ChatPopupProps {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 const API_ENDPOINT = `${API_BASE_URL}/api/chat`;
 
-// 1. Create the TypingIndicator component
+// TypingIndicator component
 const TypingIndicator: React.FC = () => {
   return (
-    <div className="flex justify-start"> {/* Aligns to the left like Lenny's messages */}
+    <div className="flex justify-start">
       <div className="max-w-min p-3 rounded-lg bg-gray-100 dark:bg-gray-700 flex space-x-1.5 items-center">
-        {/* Pulsing dots for typing effect */}
         <div className="h-2 w-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse [animation-delay:'-0.3s']"></div>
         <div className="h-2 w-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse [animation-delay:'-0.15s']"></div>
         <div className="h-2 w-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-pulse"></div>
@@ -36,9 +34,10 @@ const TypingIndicator: React.FC = () => {
 const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // This controls both indicators
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevIsLoadingRef = useRef<boolean>(isLoading); // Ref to track previous isLoading state
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,27 +45,39 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
 
   useEffect(scrollToBottom, [messages]);
 
+  // useEffect to focus input when isLoading transitions from true to false
+  useEffect(() => {
+    if (prevIsLoadingRef.current === true && isLoading === false) {
+      inputRef.current?.focus();
+    }
+    // Update the previous isLoading state for the next render
+    prevIsLoadingRef.current = isLoading;
+  }, [isLoading]);
+
   const handleSend = async () => {
     const trimmedInput = input.trim();
     if (trimmedInput === "") {
-      inputRef.current?.focus();
+      inputRef.current?.focus(); // Focus if trying to send empty message
       return;
     }
 
     const userMessageForState: ChatMessage = {
       id: Date.now().toString(),
       sender: "user",
-      text: input,
+      text: input, // Display original input
     };
-    // Add user's message, then set loading true to show typing indicator immediately after.
     setMessages((prev) => [...prev, userMessageForState]);
     
-    setInput("");
-    setIsLoading(true); // This will show button spinner AND typing indicator
+    setInput(""); // Clear input field
+    setIsLoading(true); // Show button spinner AND typing indicator
 
     try {
       const formData = new FormData();
-      formData.append("text", trimmedInput);
+      formData.append("text", trimmedInput); // Send trimmed input to backend
+      // Send history if needed by your backend
+      const historyForBackend = messages.map(msg => ({ sender: msg.sender, text: msg.text }));
+      formData.append("history", JSON.stringify(historyForBackend));
+
 
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
@@ -85,7 +96,6 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
         sender: "lenny",
         text: data.reply || "Sorry, I couldn't process that.",
       };
-      // Add Lenny's actual message. The typing indicator will disappear when isLoading becomes false.
       setMessages((prev) => [...prev, lennyMessage]);
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -96,10 +106,8 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false); // This hides both indicators
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
+      setIsLoading(false); // This hides both indicators and re-enables input
+      // The useEffect above will handle focusing the input.
     }
   };
 
@@ -116,7 +124,11 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
           <MessageCircle className="h-6 w-6 text-[#4F9F86] mr-2" />
           <h3 className="font-semibold text-lg text-gray-800 dark:text-white">Chat with Lenny</h3>
         </div>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <button 
+          onClick={onClose} 
+          className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4F9F86]"
+          aria-label="Close chat" // Added aria-label for close button
+        >
           <X size={20} />
         </button>
       </div>
@@ -133,14 +145,13 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
               }`}
             >
               {msg.sender === 'lenny' ? (
-                <div dangerouslySetInnerHTML={{ __html: marked(msg.text) }} className="prose prose-sm dark:prose-invert max-w-none" />
+                <div dangerouslySetInnerHTML={{ __html: marked.parse(msg.text) }} className="prose prose-sm dark:prose-invert max-w-none" />
               ) : (
                 msg.text
               )}
             </div>
           </div>
         ))}
-        {/* 2. Conditionally render TypingIndicator */}
         {isLoading && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
@@ -157,16 +168,20 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
             placeholder="Ask Lenny anything..."
             className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4F9F86] dark:bg-gray-700 dark:text-white"
             disabled={isLoading}
+            aria-label="Chat message input" // Added aria-label for input
           />
           <button
             onClick={handleSend}
             disabled={isLoading}
-            className="bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white p-2 rounded-md disabled:opacity-50"
+            className="bg-[#4F9F86] hover:bg-[#4F9F86]/90 text-white p-2 rounded-md disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4F9F86]"
+            aria-label="Send message" // Added aria-label for send button
           >
             {isLoading ? (
-              <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+              <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" role="status" aria-live="polite">
+                <span className="sr-only">Sending message...</span> {/* Screen reader text for spinner */}
+              </div>
             ) : (
-              <Send size={20} />
+              <Send size={20} aria-hidden="true" /> // Hide decorative icon from screen readers
             )}
           </button>
         </div>
