@@ -20,6 +20,8 @@ import Navbar from "@/components/navbar"
 import CampNetworkVisual from "@/components/camp-network-visual"
 import VoiceConversationSection from "@/components/voice-conversation-section"
 import posthog from 'posthog-js'
+import { on } from "events"
+import ChatPopup from "@/components/chatPopup"
 
 // --- Constants ---
 const COOKIE_NAMES = {
@@ -175,8 +177,12 @@ const HeroContentLeft: React.FC<HeroContentLeftProps> = ({
   </motion.div>
 );
 
+interface HeroVisualRightProps {
+  onOpenChat: () => void; // Add this prop
+}
+
 // 3. HeroVisualRight Component
-const HeroVisualRight: React.FC = () => (
+const HeroVisualRight: React.FC<HeroVisualRightProps> = ({ onOpenChat }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
@@ -187,6 +193,7 @@ const HeroVisualRight: React.FC = () => (
       <NetworkGraph />
       <motion.div
         className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10"
+        onClick={onOpenChat}
         animate={{
           y: [0, -10, 0],
           scale: [1, 1.05, 1],
@@ -309,6 +316,18 @@ export default function Home() {
   const contactRef = useRef<HTMLDivElement>(null)
   const waitlistRef = useRef<HTMLDivElement>(null)
 
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const handleOpenChat = () => {
+    setIsChatOpen(true);
+    posthog.capture('chat_opened', { source: 'landing_page' });
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+    posthog.capture('chat_closed', { source: 'landing_page' });
+  };
+
   // Effects for LinkedIn auth status and footer year
   useEffect(() => {
     const handleAuthStatus = () => {
@@ -391,7 +410,7 @@ export default function Home() {
           waitlistRef={waitlistRef}
           onLinkedInConnect={handleLinkedInConnect}
         />
-        <HeroVisualRight />
+        <HeroVisualRight onOpenChat={handleOpenChat}/>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -464,6 +483,12 @@ export default function Home() {
       <section ref={waitlistRef} id="waitlist" className="py-16 container mx-auto px-4">
         <WaitlistSignup />
       </section>
+
+      <AnimatePresence>
+        {isChatOpen && (
+          <ChatPopup onClose={handleCloseChat} /> // <--- RENDER CHAT POPUP
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="py-12 bg-gradient-to-t from-[#FFF9E3]/50 to-transparent">
