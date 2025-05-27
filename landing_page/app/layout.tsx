@@ -1,6 +1,14 @@
 import type React from "react"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Noto_Serif } from 'next/font/google'
+
+const notoSerif = Noto_Serif({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-noto-serif',
+  display: 'swap',
+})
 
 export const metadata = {
   title: "Lenny - Your Camp Connection Guide",
@@ -46,8 +54,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${notoSerif.variable} font-sans`}>
+      <body suppressHydrationWarning className={notoSerif.className}>
         <ThemeProvider 
           attribute="class" 
           defaultTheme="light" 

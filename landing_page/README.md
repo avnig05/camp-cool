@@ -23,11 +23,36 @@ Replace `<your-repository-url>` with the actual URL of the Git repository.
 
 ### 2. Install Dependencies
 
-This project uses PNPM as its package manager. PNPM is fast and efficient with disk space. To install all the necessary libraries listed in the `package.json` file, run the following command in the project root directory (`landing_page`):
+This project uses PNPM as its package manager. To install dependencies, run:
 
 ```bash
 pnpm install
 ```
-This command will download and install all the dependencies and devDependencies required to run the project. PNPM will create a `pnpm-lock.yaml` file (if one doesn't already exist or needs updating) to ensure consistent installs across different environments.
+
+### 3. Set Up Environment Variables
+
+This project requires environment variables for features like LinkedIn login and database connection.
+
+1.  **Create `.env.local`**: In the `landing_page` root directory, create a file named `.env.local`.
+2.  **Use Template**: Copy the contents of `exampledotenv` into `.env.local`.
+3.  **Fill Values**: Update the placeholder values in `.env.local` with your actual credentials/keys.
+
+    Essential variables include:
+    *   `NEXT_PUBLIC_LINKEDIN_CLIENT_ID` (LinkedIn App Client ID)
+    *   `LINKEDIN_CLIENT_SECRET` (LinkedIn App Client Secret)
+    *   `NEXT_PUBLIC_LINKEDIN_REDIRECT_URI` (Your LinkedIn App Redirect URI)
+    *   `MONGODB_URI` (MongoDB connection string)
+    *   `MONGODB_DB_NAME` (Database name for waitlist)
+    *   `MONGODB_COLLECTION_NAME` (Collection name for waitlist emails)
+
+    **Important:** The `exampledotenv` file serves as a template.
+
+### 4. Run the Development Server
+
+To start the development server, run:
+```bash
+pnpm dev
+```
+This command will start the development server, and you can view the application in your browser at `http://localhost:3000`.
 
 

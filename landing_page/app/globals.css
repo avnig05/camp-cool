@@ -33,6 +33,7 @@
     --ring: 160 33% 46%;
 
     --radius: 0.5rem;
+    /* --font-noto-serif is available via notoSerif.variable in layout if needed elsewhere */
   }
 
   .dark {
@@ -67,21 +68,23 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
+    /* Font is now applied via className in layout.tsx using next/font */
   }
 
+  /* This rule for h1-h6 can likely be removed if Noto Serif is the body font
+     and you want headings to inherit it. Only keep if you need to specifically
+     ensure/override heading font family for some reason.
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    font-family: "Noto Serif", serif;
+    font-family: "Noto Serif", serif; 
   }
+  */
 }
 
 @keyframes float {
