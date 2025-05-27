@@ -42,7 +42,7 @@ To run Camp Cool locally, follow these steps:
 4. Once Everything is correctly set up, start two terminals. 
 
     in the first terminal, run the FastAPI backend:
-    
+
     ```bash
     cd backend
     uvicorn src.main:app --reload

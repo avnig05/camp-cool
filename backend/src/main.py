@@ -4,7 +4,7 @@ from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 # from typing import Optional
 
-from src.model.Instructed_Gemini import Lenny
+from src.config.utils import init_lenny
 
 
 app = FastAPI()
@@ -33,7 +33,7 @@ async def health_check():
 
 @app.post("/api/chat")
 async def chat_with_lenny(text: str = Form(None)):
-    lenny = Lenny()
+    lenny = init_lenny()
     if text is None:
         return {"error": "No text provided for chat with Lenny."}
     response = lenny.send_msg(text)
