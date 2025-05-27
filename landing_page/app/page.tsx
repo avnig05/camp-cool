@@ -19,6 +19,7 @@ import ScrollProgress from "@/components/scroll-progress"
 import Navbar from "@/components/navbar"
 import CampNetworkVisual from "@/components/camp-network-visual"
 import VoiceConversationSection from "@/components/voice-conversation-section"
+import posthog from 'posthog-js'
 
 // --- Constants ---
 const COOKIE_NAMES = {
@@ -375,6 +376,7 @@ export default function Home() {
         howItWorksRef={howItWorksRef}
         networkRef={networkRef}
         contactRef={contactRef}
+        onLinkedInConnect={handleLinkedInConnect}
       />
       <FloatingElements />
       <ScrollProgress />
@@ -511,17 +513,23 @@ export function WaitlistSignup() {
         return;
       }
       
-      // Handle specific non-error messages like "already on waitlist"
       if (response.status === 200 && data.message === "Email already on waitlist") {
         setStatus("already_exists");
         setMessage("This email is already on our waitlist! We'll keep you posted.");
+        posthog.capture('waitlist_already_joined', {
+          email: email,
+          message: data.message
+        });
         setEmail(""); // Clear email input
       } else if (data.success) {
         setStatus("success");
         setMessage(data.message || "You're on the list! We'll keep you posted.");
+        posthog.capture('waitlist_signup_success', {
+          email: email,
+          message: data.message
+        });
         setEmail("");
       } else {
-        // Fallback for unexpected successful responses without a clear success/already_exists marker
         setStatus("error");
         setMessage(data.message || "An unexpected issue occurred. Please try again.");
       }
@@ -582,12 +590,6 @@ export function WaitlistSignup() {
               {(status === "error" || (status === "loading" && !message) ) && (
                 <p id="status-message" className={`mt-2 text-sm ${status === "error" ? "text-red-600" : "text-gray-600"}`} role={status === "error" ? "alert": "status"}>
                   {status === "loading" && !message ? "Submitting..." : message}
-                </p>
-              )}
-               {/* Explicitly show message if status is error and message is set */}
-              {status === "error" && message && (
-                <p id="error-message-explicit" className="mt-2 text-sm text-red-600" role="alert">
-                  {message}
                 </p>
               )}
             </div>
