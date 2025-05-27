@@ -75,15 +75,18 @@ export async function GET(request: NextRequest) {
 
   const responseHeaders = new Headers();
   // Clear the state cookie immediately after retrieving it.
-  // Add 'Secure' in production if your site is HTTPS only.
-  // Add 'HttpOnly' if it were a server-set sensitive cookie (not the case for state).
-  responseHeaders.append('Set-Cookie', `linkedin_oauth_state=; Path=/; Max-Age=0; SameSite=Lax; Secure; HttpOnly`);
+  // Match client-side attributes for consistency, especially regarding HttpOnly and Secure.
+  let clearCookieString = `linkedin_oauth_state=; Path=/; Max-Age=0; SameSite=Lax`;
+  if (process.env.NODE_ENV === 'production') {
+    clearCookieString += '; Secure';
+  }
+  responseHeaders.append('Set-Cookie', clearCookieString);
 
 
   // 1. Handle explicit errors from LinkedIn (e.g., user cancellation)
   if (linkedinError) {
-    console.warn(`LinkedIn OAuth Explicit Error: ${linkedinError}, Description: ${linkedinErrorDescription || 'No description'}`);
-    const redirectUrl = createErrorRedirect(request, linkedinError, linkedinErrorDescription);
+    console.warn(`LinkedIn OAuth Explicit Error: ${linkedinError || 'Unknown error'}, Description: ${linkedinErrorDescription || 'No description'}`);
+    const redirectUrl = createErrorRedirect(request, linkedinError, linkedinErrorDescription || undefined);
     return NextResponse.redirect(redirectUrl.toString(), { headers: responseHeaders });
   }
 
