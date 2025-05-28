@@ -1,8 +1,8 @@
-from src.model.Instructed_Gemini import Lenny
+from src.config.utils import init_lenny
 
 
 def main():
-    lenny = Lenny()
+    lenny = init_lenny()
     while True:
         user_input = input("You: ")
         if user_input.lower() in ["exit", "quit"]:
