@@ -1,11 +1,10 @@
 "use client";
 
-import type React from "react"; // Keep type React if it's used for explicit typing elsewhere, otherwise can be removed if not directly used.
-
-import { useState, useEffect, useRef } from "react";
+import type React from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { useSearchParams } from 'next/navigation';
+// useSearchParams is no longer directly used in this file's main components
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -20,20 +19,17 @@ import Navbar from "@/components/navbar";
 import CampNetworkVisual from "@/components/camp-network-visual";
 import VoiceConversationSection from "@/components/voice-conversation-section";
 import posthog from 'posthog-js';
-// import { on } from "events"; // Removed unused import
-import ChatPopup from "@/components/chatPopup"; // Corrected casing assuming filename is ChatPopup.tsx
-import WaitlistSignup from "@/components/waitlistSignup"; // Import WaitlistSignup
+import ChatPopup from "@/components/chatPopup";
+import WaitlistSignup from "@/components/waitlistSignup";
+import LinkedInAuthHandler from "@/components/linkedInAuthHandler"; 
 
 // --- Constants ---
 const COOKIE_NAMES = {
   LINKEDIN_STATE: 'linkedin_oauth_state',
 } as const;
 
-const AUTH_STATUSES = {
-  SUCCESS: 'success',
-  ERROR: 'error',
-  FAILED: 'failed',
-} as const;
+// AUTH_STATUSES is now primarily used within LinkedInAuthHandler.tsx
+// If needed elsewhere, consider a shared constants file.
 
 const SECTIONS = {
   ABOUT: 'about',
@@ -48,6 +44,7 @@ type ScrollToSectionType = (ref: React.RefObject<HTMLDivElement | null>) => void
 
 // Helper function to generate a random string for the state parameter
 const generateRandomString = (length: number): string => {
+  if (typeof window === 'undefined') return '';
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
@@ -58,6 +55,7 @@ const generateRandomString = (length: number): string => {
 
 // Helper function to set a secure cookie (client-side)
 const setSecureCookie = (name: string, value: string, minutes: number) => {
+  if (typeof document === 'undefined') return;
   const date = new Date();
   date.setTime(date.getTime() + (minutes * 60 * 1000));
   const expires = "; expires=" + date.toUTCString();
@@ -65,12 +63,11 @@ const setSecureCookie = (name: string, value: string, minutes: number) => {
   if (process.env.NODE_ENV === 'production' || (typeof window !== 'undefined' && window.location.protocol === 'https:')) {
     cookieString += '; Secure';
   }
-  if (typeof document !== 'undefined') {
-    document.cookie = cookieString;
-  }
+  document.cookie = cookieString;
 };
 
-// 1. AnnouncementBanner Component
+// LinkedInAuthHandler function has been MOVED to components/LinkedInAuthHandler.tsx
+
 interface AnnouncementBannerProps {
   show: boolean;
   onClose: () => void;
@@ -102,7 +99,6 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ show, onClose }
   </AnimatePresence>
 );
 
-// 2. HeroContentLeft Component
 interface HeroContentLeftProps {
   scrollToSection: ScrollToSectionType;
   howItWorksRef: React.RefObject<HTMLDivElement | null>;
@@ -183,8 +179,6 @@ const HeroContentLeft: React.FC<HeroContentLeftProps> = ({
 interface HeroVisualRightProps {
   onOpenChat: () => void;
 }
-
-// 3. HeroVisualRight Component
 const HeroVisualRight: React.FC<HeroVisualRightProps> = ({ onOpenChat }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
@@ -195,7 +189,7 @@ const HeroVisualRight: React.FC<HeroVisualRightProps> = ({ onOpenChat }) => (
     <div className="relative">
       <NetworkGraph />
       <motion.div
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer" // Added cursor-pointer
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer"
         onClick={onOpenChat}
         animate={{
           y: [0, -10, 0],
@@ -230,7 +224,6 @@ const HeroVisualRight: React.FC<HeroVisualRightProps> = ({ onOpenChat }) => (
   </motion.div>
 );
 
-// 4. NetworkSectionContent Component (includes FeatureItem)
 interface FeatureItemProps {
   text: string;
   delay: number;
@@ -280,7 +273,6 @@ const NetworkSectionContent: React.FC = () => {
   );
 };
 
-// 5. ContactCTAContent Component
 const ContactCTAContent: React.FC = () => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -306,13 +298,12 @@ const ContactCTAContent: React.FC = () => (
   </motion.div>
 );
 
+
 export default function Home() {
-  const isMobile = useIsMobile(); // Ensure useIsMobile hook is correctly implemented and imported
+  const isMobile = useIsMobile();
   const [showBanner, setShowBanner] = useState(true);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const searchParams = useSearchParams();
 
-  // Refs for scrolling to sections
   const aboutRef = useRef<HTMLDivElement>(null);
   const howItWorksRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<HTMLDivElement>(null);
@@ -323,45 +314,21 @@ export default function Home() {
 
   const handleOpenChat = () => {
     setIsChatOpen(true);
-    if (typeof window !== 'undefined' && posthog) { // Check if posthog is available
+    if (typeof window !== 'undefined' && posthog) {
         posthog.capture('chat_opened', { source: 'landing_page' });
     }
   };
 
   const handleCloseChat = () => {
     setIsChatOpen(false);
-    if (typeof window !== 'undefined' && posthog) { // Check if posthog is available
+    if (typeof window !== 'undefined' && posthog) {
         posthog.capture('chat_closed', { source: 'landing_page' });
     }
   };
 
-  // Effects for LinkedIn auth status and footer year
   useEffect(() => {
-    const handleAuthStatus = () => {
-      const status = searchParams.get('linkedin_auth_status');
-      const error = searchParams.get('linkedin_error');
-      const errorDescription = searchParams.get('linkedin_error_description');
-
-      if (status === AUTH_STATUSES.SUCCESS) {
-        toast.success('Successfully connected with LinkedIn!');
-      } else if (status === AUTH_STATUSES.ERROR || status === AUTH_STATUSES.FAILED) {
-        toast.error(errorDescription || error || 'Failed to connect with LinkedIn. Please try again.');
-      }
-      
-      if (typeof window !== 'undefined') { // Ensure window is defined for history manipulation
-        if (status || error || errorDescription) {
-          const currentUrl = new URL(window.location.href);
-          currentUrl.searchParams.delete('linkedin_auth_status');
-          currentUrl.searchParams.delete('linkedin_error');
-          currentUrl.searchParams.delete('linkedin_error_description');
-          window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
-        }
-      }
-    };
-
-    handleAuthStatus();
     setCurrentYear(new Date().getFullYear());
-  }, [searchParams]);
+  }, []);
 
   const scrollToSection: ScrollToSectionType = (ref) => {
     if (ref.current) {
@@ -381,7 +348,7 @@ export default function Home() {
     }
     
     const state = generateRandomString(32);
-    setSecureCookie(COOKIE_NAMES.LINKEDIN_STATE, state, 5); // Assumes setSecureCookie handles typeof document check
+    setSecureCookie(COOKIE_NAMES.LINKEDIN_STATE, state, 5);
 
     const params = new URLSearchParams({
         response_type: 'code',
@@ -391,7 +358,7 @@ export default function Home() {
         scope,
     });
     
-    if (typeof window !== 'undefined') { // Ensure window is defined for navigation
+    if (typeof window !== 'undefined') {
         const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
         window.location.href = authUrl;
     }
@@ -399,13 +366,18 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#FFF9E3] to-[#82AFA9]/20 relative overflow-hidden">
+      {/* LinkedInAuthHandler is wrapped in Suspense and placed early */}
+      <Suspense fallback={null}>
+        <LinkedInAuthHandler />
+      </Suspense>
+      
       <Navbar
         scrollToSection={scrollToSection}
         aboutRef={aboutRef}
         howItWorksRef={howItWorksRef}
         networkRef={networkRef}
         contactRef={contactRef}
-        onLinkedInConnect={handleLinkedInConnect} // Pass this prop to Navbar
+        onLinkedInConnect={handleLinkedInConnect}
       />
       <FloatingElements />
       <ScrollProgress />
@@ -511,6 +483,3 @@ export default function Home() {
     </main>
   );
 }
-
-// The WaitlistSignup function definition has been REMOVED from this file.
-// It should be in its own file (e.g., components/WaitlistSignup.tsx) and imported.
