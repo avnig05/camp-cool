@@ -6,23 +6,26 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || "waitlist_users";
 const MONGODB_COLLECTION_NAME = process.env.MONGODB_COLLECTION_NAME || "userlist";
 
-if (!MONGODB_URI) {
-  console.error("Missing MongoDB URI environment variable");
-  // We'll throw an error during connection attempt if URI is missing,
-  // but logging here helps in early diagnosis during development.
+// It's good practice to type the global object for HMR in development
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-let client: MongoClient | null = null;
-let clientPromise: Promise<MongoClient> | null = null;
+let client: MongoClient; // No need for client to be | null if we manage clientPromise carefully
+// clientPromise will be initialized by getMongoClient and cached
+let clientPromiseInternal: Promise<MongoClient> | undefined = undefined;
+
 
 async function getMongoClient(): Promise<MongoClient> {
   if (!MONGODB_URI) {
+    console.error("CRITICAL: MongoDB URI is not configured in environment variables.");
     throw new Error("MongoDB URI is not configured in environment variables.");
   }
+
   if (process.env.NODE_ENV === "development") {
     // In development mode, use a global variable so that the MongoClient
     // instance is preserved across module reloads caused by HMR (Hot Module Replacement).
-    // @ts-ignore
     if (!global._mongoClientPromise) {
       client = new MongoClient(MONGODB_URI, {
         serverApi: {
@@ -31,23 +34,29 @@ async function getMongoClient(): Promise<MongoClient> {
           deprecationErrors: true,
         },
       });
-      // @ts-ignore
       global._mongoClientPromise = client.connect();
+      console.log("Dev: New MongoDB connection promise created and cached globally.");
     }
-    // @ts-ignore
-    clientPromise = global._mongoClientPromise;
+    // This assignment ensures we are returning the promise stored on global
+    // which is expected to be Promise<MongoClient>
+    return global._mongoClientPromise;
   } else {
     // In production mode, it's best to not use a global variable.
-    client = new MongoClient(MONGODB_URI, {
-      serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-      },
-    });
-    clientPromise = client.connect();
+    // Cache the promise at the module level for reuse across invocations
+    // in the same serverless instance.
+    if (!clientPromiseInternal) {
+      client = new MongoClient(MONGODB_URI, {
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: true,
+          deprecationErrors: true,
+        },
+      });
+      clientPromiseInternal = client.connect();
+      console.log("Prod: New MongoDB connection promise created and cached at module level.");
+    }
+    return clientPromiseInternal;
   }
-  return clientPromise;
 }
 
 export async function POST(request: Request) {
@@ -71,16 +80,16 @@ export async function POST(request: Request) {
 
     console.log("Received for waitlist:", { email });
 
-    const mongoClient = await getMongoClient();
-    const db = mongoClient.db(MONGODB_DB_NAME);
+    const mongoClientInstance = await getMongoClient(); // This will now correctly be Promise<MongoClient>
+    const db = mongoClientInstance.db(MONGODB_DB_NAME);
     const collection = db.collection(MONGODB_COLLECTION_NAME);
 
     // Check if email already exists
     const existingEntry = await collection.findOne({ email });
     if (existingEntry) {
       return NextResponse.json(
-        { message: "Email already on waitlist" },
-        { status: 200 } // Or 409 Conflict, depending on desired behavior
+        { message: "Email already on waitlist", success: false }, // Added success: false for clarity
+        { status: 200 } // Changed from 409 as per original code; 200 with a message is fine
       );
     }
 
@@ -93,18 +102,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message: "Successfully joined waitlist" });
 
   } catch (error: any) {
-    console.error("Waitlist error:", error);
-    // Distinguish between configuration errors and runtime errors
+    console.error("Waitlist API error:", error.message, error.stack); // Log more error details
+    
+    // Check for specific error messages or types if possible
     if (error.message.includes("MongoDB URI is not configured")) {
         return NextResponse.json(
             { error: "Server configuration error: MongoDB URI missing." },
-            { status: 500 }
+            { status: 503 } // Service Unavailable might be more appropriate
         );
     }
+    // General error
     return NextResponse.json(
-      { error: error.message || "Failed to join waitlist" },
+      { error: "An internal server error occurred while trying to join the waitlist.", details: error.message },
       { status: 500 }
     );
   }
 }
-
