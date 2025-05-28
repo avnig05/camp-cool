@@ -1,0 +1,9 @@
+# cloud_run_config.yaml
+set-env-vars:
+  - MODEL_PROVIDER=openai
+  - ALLOWED_ORIGINS="http://localhost:3000,https://v0-camp-cool.vercel.app,https://v0-camp-cool-v0slugai-gmailcoms-projects.vercel.app"
+set-secrets:
+  - OPENAI_API_KEY=OPENAI_API_KEY:latest
+  - GEMINI_API_KEY=GEMINI_API_KEY:latest
+  # If you have other secrets like MONGODB_URI:
+  # - MONGODB_URI=MONGODB_URI:latest

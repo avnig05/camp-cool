@@ -1,35 +1,43 @@
 # Use an official Python runtime as a parent image
-FROM python:3.11-slim
+FROM python:3.13-slim
+
+# Mitigate base image vulnerabilities
+RUN apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies needed for building Python packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    g++ \
+    libjpeg-dev \
+    zlib1g-dev \
+    libtiff-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libwebp-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies if any (e.g., for 'sharp' if it were a Python lib needing sys deps)
-# RUN apt-get update && apt-get install -y --no-install-recommends some-package && rm -rf /var/lib/apt/lists/*
-
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip wheel setuptools 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code into the container
-# If main.py is in the root and src is a folder:
+# Copy your entire src directory (which includes main.py)
 COPY ./src ./src
-COPY main.py .
-# If your init_lenny or Lenny class needs other files from src/config or src/model, ensure they are copied.
-# The './src ./src' line should cover this if init_lenny is in src/config/utils.py as implied.
 
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Define the command to run your application
-# This command will run when the container starts.
-# It tells uvicorn to run the 'app' instance from the 'main.py' file.
-# --host 0.0.0.0 makes it accessible from outside the container.
-# --port 8000 matches the EXPOSE instruction.
-# Add --reload for development only, remove for production.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
