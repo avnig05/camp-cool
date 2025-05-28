@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Form
-# import shutil
-# from pathlib import Path
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 # from typing import Optional
 
@@ -9,9 +8,19 @@ from src.config.utils import init_lenny
 
 app = FastAPI()
 
+allowed_origins_list = [
+    "http://localhost:3000",
+    "https://v0-camp-cool.vercel.app",
+    "https://v0-camp-cool-v0slugai-gmailcoms-projects.vercel.app"
+]
+
+logging.basicConfig(level=logging.INFO)  # Configure basic logging
+logging.info(f"CORS Middleware configured to allow origins: {allowed_origins_list}")
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://v0-camp-cool.vercel.app/", "https://v0-camp-cool-v0slugai-gmailcoms-projects.vercel.app"],
+    allow_origins=allowed_origins_list,
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
