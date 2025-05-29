@@ -43,7 +43,10 @@ async def health_check():
 @app.post("/api/chat")
 async def chat_with_lenny(text: str = Form(None)):
     lenny = init_lenny()
+    print(f"lenny initialized: {lenny}")
+    logging.info(f"Received chat request with text: {text}")
     if text is None:
         return {"error": "No text provided for chat with Lenny."}
     response = lenny.send_msg(text)
+    logging.info(f"Lenny's response: {response}")
     return {"response": response}

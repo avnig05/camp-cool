@@ -96,6 +96,9 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
         sender: "lenny",
         text: data.reply || "Sorry, I couldn't process that.",
       };
+      console.log('API response:', response);
+      console.log('Lenny response:', data);
+      console.log('Lenny message:', lennyMessage);
       setMessages((prev) => [...prev, lennyMessage]);
     } catch (error) {
       console.error("Failed to send message:", error);
