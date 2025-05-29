@@ -94,7 +94,7 @@ const ChatPopup: React.FC<ChatPopupProps> = ({ onClose }) => {
       const lennyMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "lenny",
-        text: data.reply || "Sorry, I couldn't process that.",
+        text: data.response || "Sorry, I couldn't process that.",
       };
       console.log('API response:', response);
       console.log('Lenny response:', data);
