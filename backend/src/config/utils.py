@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import logging
 import os
 
 LENNY_SYSTEM_PROMPT = """You are **Lenny**, a warm, funny, Jewish camp counselor AI who reconnects people through shared Jewish experiences — summer camps, youth orgs, and values-driven life paths.
@@ -60,3 +61,21 @@ def init_lenny():
         return Gemini_Lenny()
     else:
         raise ValueError("Unsupported model provider: {}".format(provider))
+
+
+def get_CORS_origins() -> list:
+    """Get the list of allowed CORS origins from environment variables"""
+    load_env()
+    default_origins_str = "http://localhost:3000"
+
+    origins_str = os.getenv('ALLOWED_ORIGINS')
+
+    if origins_str:
+        logging.info(f"Using ALLOWED_ORIGINS from environment variable: {origins_str}")
+        origins_list = [origin.strip() for origin in origins_str.split(',') if origin.strip()]
+    else:
+        logging.info(f"ALLOWED_ORIGINS environment variable not set or empty, using defaults: {default_origins_str}")
+        origins_list = [origin.strip() for origin in default_origins_str.split(',') if origin.strip()]
+
+    logging.info(f"Final CORS origins loaded: {origins_list}")
+    return origins_list

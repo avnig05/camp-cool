@@ -1,10 +1,9 @@
 # backend/src/model/Instructed_Gemini.py
 # Standard library imports
 import logging
+from typing import List, Dict
 
 # Third-party imports
-# from dotenv import load_dotenv
-# from pathlib import Path
 from google import genai as Gemini
 from google.genai import types
 
@@ -21,15 +20,22 @@ class Gemini_Lenny:
         self.client = Gemini.Client(api_key=get_gemini_api_key())
         self.model = "gemini-2.0-flash"
 
-    def send_msg(self, text: str) -> str:
-        # send request to OpenAI API to extract event details into a JSON object
+    def send_msg(self, text: str, history: List[Dict[str, str]]) -> str:
+        prompt = []
+
+        for message in history:
+            role = "user" if message.get("sender") == "user" else "assistant"
+            prompt.append({"role": role, "content": message.get("text", "")})
+
+        # Add the current user message to the prompt
+        prompt.append({"role": "user", "content": text})
+        logging.info(f"Sending prompt to Gemini: {prompt}")
+
         try:
-            # print("\nsending request to Gemini API: ", text)
-            # Fallback to text-only if no image_path is provided
             response = self.client.models.generate_content(
                 model=self.model,
                 config=types.GenerateContentConfig(system_instruction=LENNY_SYSTEM_PROMPT),
-                contents=[text],
+                contents=prompt,
             )
 
             generated_text = response.text

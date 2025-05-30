@@ -1,22 +1,17 @@
 from fastapi import FastAPI, Form
 import logging
 from fastapi.middleware.cors import CORSMiddleware
-# from typing import Optional
+from typing import List, Dict, Optional
+import json
 
-from src.config.utils import init_lenny
-
+from src.config.utils import init_lenny, get_CORS_origins, load_env
+load_env()
 
 app = FastAPI()
 
-allowed_origins_list = [
-    "http://localhost:3000",
-    "https://v0-camp-cool.vercel.app",
-    "https://v0-camp-cool-v0slugai-gmailcoms-projects.vercel.app"
-]
+allowed_origins_list = get_CORS_origins()
 
 logging.basicConfig(level=logging.INFO)  # Configure basic logging
-logging.info(f"CORS Middleware configured to allow origins: {allowed_origins_list}")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,12 +36,33 @@ async def health_check():
 
 
 @app.post("/api/chat")
-async def chat_with_lenny(text: str = Form(None)):
+async def chat_with_lenny(
+    text: Optional[str] = Form(None),
+    history_str: Optional[str] = Form(None)
+):
+
     lenny = init_lenny()
     print(f"lenny initialized: {lenny}")
     logging.info(f"Received chat request with text: {text}")
+    logging.info(f"Received chat history: {history_str}")
+
     if text is None:
+        logging.error("No text provided for chat with Lenny.")
         return {"error": "No text provided for chat with Lenny."}
-    response = lenny.send_msg(text)
+
+    parsed_history: List[Dict[str, str]] = []
+    if history_str:
+        try:
+            parsed_history = json.loads(history_str)
+            logging.info(f"Parsed chat history: {parsed_history}")
+        except json.JSONDecodeError as e:
+            logging.error(f"Error parsing chat history: {e}")
+            parsed_history = []
+
+    response = lenny.send_msg(text, history=parsed_history)
+    if response is None:
+        logging.error("Lenny's response is None.")
+        return {"error": "Lenny's response is None."}
+
     logging.info(f"Lenny's response: {response}")
     return {"response": response}
